@@ -12,7 +12,6 @@
 // 分析自动打包；v30+ 引入纯 ESM 依赖且要求 Node >=22，无法在 CI(18-24) 与
 // pkg(node18) 目标下运行。
 //
-const { JSDOM, VirtualConsole } = require('jsdom')
 const { default: axios } = require('axios')
 const { APP_CONF } = require('../util/config.json')
 const logger = require('../util/logger')
@@ -45,6 +44,9 @@ async function ensureWatchman() {
   if (initPromise) return initPromise
 
   initPromise = (async () => {
+    // jsdom 改为懒加载：避免在任何环境加载本模块时就引入重量级依赖
+    // （Serverless 打包环境中 jsdom 顶层 require.resolve 会直接抛错）
+    const { JSDOM, VirtualConsole } = require('jsdom')
     const js = await getToolJs()
     const virtualConsole = new VirtualConsole()
     virtualConsole.on('jsdomError', () => {})

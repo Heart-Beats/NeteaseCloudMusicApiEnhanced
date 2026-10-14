@@ -12,7 +12,10 @@ const {
 
 let mm
 module.exports = async (query, request) => {
-  mm = require('music-metadata')
+  // music-metadata v11 为纯 ESM 包（exports 仅含 import 条件），
+  // Serverless 打包环境（esbuild 按 CJS 解析）下 require 会解析失败，
+  // 因此改用动态 import —— Node 运行时与打包环境均兼容
+  mm = await import('music-metadata')
 
   query.songFile.name = Buffer.from(query.songFile.name, 'latin1').toString(
     'utf-8',

@@ -12,18 +12,34 @@ if (!fs.existsSync(anonymousTokenPath)) {
 let obj = {}
 
 const modulePath = path.join(__dirname, 'module')
-const moduleFiles = fs.readdirSync(modulePath).reverse()
+
+/**
+ * Serverless 打包环境（如 EdgeOne 云函数）不会随函数产物携带 module 目录，
+ * 此时回退到构建期生成的静态清单（cloud-functions/_ncm-manifest.js），
+ * 清单内的 require 会在打包时被静态内联。
+ */
+let moduleFiles
+let loadModuleFile
+try {
+  moduleFiles = fs.readdirSync(modulePath).reverse()
+  loadModuleFile = (file) => require(path.join(modulePath, file))
+} catch (err) {
+  const manifest = require('./cloud-functions/_ncm-manifest.js')
+  moduleFiles = Object.keys(manifest.files).reverse()
+  loadModuleFile = (file) => manifest.files[file]
+}
 
 let requestModule = null
 
 moduleFiles.forEach((file) => {
   if (!file.endsWith('.js')) return
 
-  const filePath = path.join(modulePath, file)
-  let fileModule = require(filePath)
   let fn = file.split('.').shift() || ''
 
   obj[fn] = function (data = {}) {
+    // 延迟到首次调用时加载对应模块（Serverless 冷启动友好，
+    // 避免打包环境在启动阶段加载无关模块）
+    const fileModule = loadModuleFile(file)
     const cookie =
       typeof data.cookie === 'string'
         ? cookieToJson(data.cookie)
