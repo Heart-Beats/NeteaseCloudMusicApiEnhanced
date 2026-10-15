@@ -81,7 +81,45 @@ function initApp() {
 
 const app = express()
 
+// 根路径欢迎页：打包环境不携带 public/ 文档目录，原版根路径会 404，
+// 这里直接在外层 app 返回一个轻量服务信息页
+const ROOT_PAGE = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeteaseCloudMusicApiEnhanced</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         background: #f6f7f9; color: #1f2328; font: 15px/1.7 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  main { max-width: 640px; padding: 32px; background: #fff; border: 1px solid #e3e6ea; border-radius: 12px; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p.sub { color: #57606a; margin: 0 0 20px; }
+  code { background: #f0f2f5; border: 1px solid #e3e6ea; border-radius: 4px; padding: 1px 6px; font-size: 13px; }
+  a { color: #1a6dd4; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NeteaseCloudMusicApiEnhanced</h1>
+  <p class="sub">网易云音乐 API 服务 · 部署于 EdgeOne Makers（全球可用区）</p>
+  <ul>
+    <li>接口示例：<code>GET /search?keywords=你好</code></li>
+    <li>登录态：由调用方随请求携带（cookie 参数或 Cookie 头）</li>
+    <li>接口文档：<a href="https://neteasecloudmusicapienhanced.js.org/" target="_blank" rel="noopener">官方文档</a></li>
+    <li>项目仓库：<a href="https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced" target="_blank" rel="noopener">GitHub</a></li>
+  </ul>
+</main>
+</body>
+</html>`
+
 app.use((req, res, next) => {
+  if (req.method === 'GET' && (req.path === '/' || req.path === '')) {
+    res.set('Content-Type', 'text/html; charset=utf-8')
+    return res.status(200).send(ROOT_PAGE)
+  }
   if (state.innerApp) {
     return state.innerApp(req, res, next)
   }
